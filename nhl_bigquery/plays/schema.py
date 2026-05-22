@@ -841,4 +841,171 @@ PLAYS_SCHEMA: list[ColumnSpec] = [
         nhl_api_source_field="awayTeam.abbrev",
         deprecated_in_year=None,
     ),
+    # -------------------------------------------------------------------------
+    # Group E: On-ice state + source quality
+    # -------------------------------------------------------------------------
+    ColumnSpec(
+        name="home_on_ice_ids",
+        type="INT64",
+        mode="REPEATED",
+        short_description="Home team player IDs on the ice during this event.",
+        business_definition=(
+            "Array of NHL Player IDs for every home-team player on the ice at the "
+            "moment of this event. Derived during ingestion by joining the event's "
+            "absolute time to each player's shift intervals (half-open). Empty "
+            "array for shootout events and for pre-shift-era games."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=None, valid_values=None, example_value=[8478402, 8479318],
+        gotchas=[
+            "Empty for shootout events (period_type='SO').",
+            "Empty for games where source_quality='NO_SHIFTS'.",
+            "May have fewer than 5 members during goalie-pulled situations.",
+        ],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from shift-charts + event time)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_on_ice_ids",
+        type="INT64",
+        mode="REPEATED",
+        short_description="Away team player IDs on the ice during this event.",
+        business_definition=(
+            "Array of NHL Player IDs for every away-team player on the ice at "
+            "the moment of this event. Same derivation rules as home_on_ice_ids."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=None, valid_values=None, example_value=[8474157, 8476881],
+        gotchas=[
+            "Empty for shootout events and for source_quality='NO_SHIFTS' rows.",
+        ],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from shift-charts + event time)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_skaters_on_ice",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Count of home skaters on ice (excludes goalie).",
+        business_definition=(
+            "Number of home-team skaters on the ice at event time, excluding the "
+            "goaltender. Typically 5; can be 6 with goalie pulled, 4 on a PK, "
+            "3 in 3v3 OT."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=(0.0, 6.0), valid_values=None, example_value=5,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from home_on_ice_ids)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_skaters_on_ice",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Count of away skaters on ice (excludes goalie).",
+        business_definition=(
+            "Number of away-team skaters on the ice at event time, excluding the "
+            "goaltender."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=(0.0, 6.0), valid_values=None, example_value=5,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from away_on_ice_ids)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_goalie_on_ice",
+        type="BOOL",
+        mode="NULLABLE",
+        short_description="Is the home goalie on the ice for this event?",
+        business_definition=(
+            "True if the home goaltender is on the ice at event time. False when "
+            "the home goalie has been pulled for an extra attacker."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=None, valid_values=None, example_value=True,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from situationCode + on-ice IDs)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_goalie_on_ice",
+        type="BOOL",
+        mode="NULLABLE",
+        short_description="Is the away goalie on the ice for this event?",
+        business_definition=(
+            "True if the away goaltender is on the ice at event time."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=None, valid_values=None, example_value=True,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from situationCode + on-ice IDs)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="strength_state",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Strength code: EV, PP_H, PP_A, SH_H, SH_A, EN_H, EN_A, 4v4, 3v3.",
+        business_definition=(
+            "Derived strength state at event time. EV=even strength 5v5; "
+            "PP_H/PP_A=power play for home/away; SH_H/SH_A=shorthanded; "
+            "EN_H/EN_A=empty net for home/away (goalie pulled); "
+            "4v4=coincidental majors; 3v3=regular-season OT."
+        ),
+        semantic_tags=["on_ice", "derived"],
+        valid_range=None,
+        valid_values=["EV", "PP_H", "PP_A", "SH_H", "SH_A", "EN_H", "EN_A", "4v4", "3v3"],
+        example_value="EV",
+        gotchas=[
+            "NULL for shootout events and for source_quality='NO_SHIFTS' rows.",
+        ],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from skater counts + goalie flags)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="source_quality",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Ingestion source-quality flag (FULL, NO_SHIFTS, PARTIAL).",
+        business_definition=(
+            "Indicates the completeness of source data for this row. FULL = both "
+            "play-by-play and shift-charts were available and merged. NO_SHIFTS = "
+            "shift-charts unavailable (likely pre-shift-era game); on-ice arrays "
+            "are empty. PARTIAL = play-by-play available but partial shift coverage."
+        ),
+        semantic_tags=["meta", "derived"],
+        valid_range=None,
+        valid_values=["FULL", "NO_SHIFTS", "PARTIAL"],
+        example_value="FULL",
+        gotchas=[
+            "Filter source_quality='FULL' for analyses that depend on on-ice arrays.",
+        ],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(set by ingestion)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="ingested_at",
+        type="TIMESTAMP",
+        mode="REQUIRED",
+        short_description="Timestamp the row was ingested.",
+        business_definition=(
+            "UTC timestamp when this row was written by nhl-bigquery sync. Useful "
+            "for tracking freshness and pinpointing the run that wrote a given row."
+        ),
+        semantic_tags=["meta"],
+        valid_range=None, valid_values=None, example_value="2026-05-22T17:00:00Z",
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(set by ingestion)",
+        deprecated_in_year=None,
+    ),
 ]

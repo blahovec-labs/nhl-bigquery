@@ -113,3 +113,35 @@ def test_penalty_severity_has_valid_values():
     spec = next(c for c in PLAYS_SCHEMA if c.name == "penalty_severity")
     assert "MIN" in (spec.valid_values or [])
     assert "MAJ" in (spec.valid_values or [])
+
+
+def test_group_e_columns_present():
+    names = {c.name for c in PLAYS_SCHEMA}
+    expected = {
+        "home_on_ice_ids", "away_on_ice_ids",
+        "home_skaters_on_ice", "away_skaters_on_ice",
+        "home_goalie_on_ice", "away_goalie_on_ice",
+        "strength_state",
+        "source_quality", "ingested_at",
+    }
+    missing = expected - names
+    assert not missing, f"missing columns: {missing}"
+
+
+def test_on_ice_arrays_are_repeated_int64():
+    for name in ("home_on_ice_ids", "away_on_ice_ids"):
+        spec = next(c for c in PLAYS_SCHEMA if c.name == name)
+        assert spec.type == "INT64", f"{name} type"
+        assert spec.mode == "REPEATED", f"{name} mode"
+
+
+def test_strength_state_has_valid_values():
+    spec = next(c for c in PLAYS_SCHEMA if c.name == "strength_state")
+    assert "EV" in (spec.valid_values or [])
+    assert "PP_H" in (spec.valid_values or [])
+    assert "3v3" in (spec.valid_values or [])
+
+
+def test_full_plays_schema_has_no_duplicate_names():
+    names = [c.name for c in PLAYS_SCHEMA]
+    assert len(names) == len(set(names))
