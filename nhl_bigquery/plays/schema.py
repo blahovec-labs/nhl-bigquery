@@ -219,4 +219,150 @@ PLAYS_SCHEMA: list[ColumnSpec] = [
         nhl_api_source_field="(derived from periodDescriptor.number + timeInPeriod)",
         deprecated_in_year=None,
     ),
+    # -------------------------------------------------------------------------
+    # Group B: Event classification + coordinates
+    # -------------------------------------------------------------------------
+    ColumnSpec(
+        name="event_type",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="High-level event type.",
+        business_definition=(
+            "Event classification — one of GOAL, SHOT, MISSED_SHOT, BLOCKED_SHOT, "
+            "HIT, FACEOFF, GIVEAWAY, TAKEAWAY, PENALTY, STOPPAGE, PERIOD_START, "
+            "PERIOD_END, GAME_END, SHOOTOUT_COMPLETE, DELAYED_PENALTY. Drives "
+            "which player-role columns are populated."
+        ),
+        semantic_tags=["event_context", "classification"],
+        valid_range=None,
+        valid_values=[
+            "GOAL", "SHOT", "MISSED_SHOT", "BLOCKED_SHOT", "HIT", "FACEOFF",
+            "GIVEAWAY", "TAKEAWAY", "PENALTY", "STOPPAGE", "PERIOD_START",
+            "PERIOD_END", "GAME_END", "SHOOTOUT_COMPLETE", "DELAYED_PENALTY",
+        ],
+        example_value="SHOT",
+        gotchas=[
+            "BLOCKED_SHOT: shooter_id is the attempt player; blocker_id is the defender.",
+            "STOPPAGE includes whistles, icings, offsides; check event_type_desc for detail.",
+        ],
+        nhl_api_equivalent="typeDescKey (uppercased)",
+        nhl_api_source_field="typeDescKey",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="event_type_desc",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Detailed event sub-description (raw API).",
+        business_definition=(
+            "Lower-case key from the NHL API (e.g., 'goal', 'shot-on-goal', "
+            "'missed-shot', 'blocked-shot', 'hit', 'faceoff', 'giveaway', "
+            "'takeaway', 'penalty', 'stoppage'). Preserved verbatim for "
+            "advanced filtering."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=None, valid_values=None, example_value="shot-on-goal",
+        gotchas=[],
+        nhl_api_equivalent="typeDescKey",
+        nhl_api_source_field="typeDescKey",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="situation_code",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="4-digit on-ice strength code (away_goalie/away_skaters/home_skaters/home_goalie).",
+        business_definition=(
+            "4-character code from the NHL API encoding (away_goalie, away_skaters, "
+            "home_skaters, home_goalie) at the time of the event. '1551' is "
+            "even-strength 5v5 with both goalies in. '1451' is away PP (4 away "
+            "skaters vs. 5 home skaters, both goalies in)."
+        ),
+        semantic_tags=["event_context", "on_ice"],
+        valid_range=None, valid_values=None, example_value="1551",
+        gotchas=[
+            "Order is away_goalie, away_skaters, home_skaters, home_goalie.",
+            "Position 0/3 (goalie flags): 1 means goalie on ice, 0 means pulled.",
+        ],
+        nhl_api_equivalent="situationCode",
+        nhl_api_source_field="situationCode",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="x_coord",
+        type="FLOAT64",
+        mode="NULLABLE",
+        short_description="X coordinate on the ice surface (feet from center red line).",
+        business_definition=(
+            "X coordinate of the event location in feet. The ice surface is 200 ft "
+            "long, with x=0 at the center red line, x=+89 at one goal line and "
+            "x=-89 at the other. NULL for events without a location (PERIOD_START, "
+            "GAME_END, STOPPAGE in some cases)."
+        ),
+        semantic_tags=["location"],
+        valid_range=(-100.0, 100.0), valid_values=None, example_value=-42.0,
+        gotchas=[
+            "Coordinate orientation switches between periods 1 and 2 (teams change ends).",
+            "Pre-2010 games may have NULL x_coord even for shot events.",
+        ],
+        nhl_api_equivalent="details.xCoord",
+        nhl_api_source_field="details.xCoord",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="y_coord",
+        type="FLOAT64",
+        mode="NULLABLE",
+        short_description="Y coordinate on the ice surface (feet from center line).",
+        business_definition=(
+            "Y coordinate of the event location in feet. The ice surface is 85 ft "
+            "wide, so y ranges from -42.5 to +42.5. NULL for events without a "
+            "location."
+        ),
+        semantic_tags=["location"],
+        valid_range=(-42.5, 42.5), valid_values=None, example_value=-7.5,
+        gotchas=[
+            "Pre-2010 games may have NULL y_coord even for shot events.",
+        ],
+        nhl_api_equivalent="details.yCoord",
+        nhl_api_source_field="details.yCoord",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="zone_code",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Single-letter zone code: O, D, N (offensive, defensive, neutral).",
+        business_definition=(
+            "Zone of the ice surface where the event occurred, relative to the "
+            "event_owner_team. O=offensive (attacking) zone, D=defensive zone, "
+            "N=neutral zone."
+        ),
+        semantic_tags=["location"],
+        valid_range=None, valid_values=["O", "D", "N"], example_value="O",
+        gotchas=[
+            "Zone is relative to event_owner_team — a SHOT by Team A has zone=O "
+            "(their offensive zone), while a HIT by Team A in Team B's offensive "
+            "zone has zone=D from A's perspective.",
+        ],
+        nhl_api_equivalent="details.zoneCode",
+        nhl_api_source_field="details.zoneCode",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="zone_descriptor",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Human-readable zone name.",
+        business_definition=(
+            "Full English name for the zone (e.g., 'offensive', 'defensive', 'neutral'). "
+            "Display-only; use zone_code for filtering."
+        ),
+        semantic_tags=["location"],
+        valid_range=None, valid_values=None, example_value="offensive",
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived from details.zoneCode)",
+        deprecated_in_year=None,
+    ),
 ]

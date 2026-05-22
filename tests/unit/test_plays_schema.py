@@ -39,3 +39,28 @@ def test_no_duplicate_column_names():
 def test_every_column_has_business_definition():
     for spec in PLAYS_SCHEMA:
         assert spec.business_definition.strip(), f"{spec.name} missing business_definition"
+
+
+def test_group_b_columns_present():
+    names = {c.name for c in PLAYS_SCHEMA}
+    expected = {
+        "event_type", "event_type_desc", "situation_code",
+        "x_coord", "y_coord", "zone_code", "zone_descriptor",
+    }
+    missing = expected - names
+    assert not missing, f"missing columns: {missing}"
+
+
+def test_event_type_has_valid_values():
+    spec = next(c for c in PLAYS_SCHEMA if c.name == "event_type")
+    assert spec.valid_values is not None
+    assert "GOAL" in spec.valid_values
+    assert "FACEOFF" in spec.valid_values
+    assert "SHOT" in spec.valid_values
+
+
+def test_coords_have_valid_range():
+    x = next(c for c in PLAYS_SCHEMA if c.name == "x_coord")
+    y = next(c for c in PLAYS_SCHEMA if c.name == "y_coord")
+    assert x.valid_range == (-100.0, 100.0)
+    assert y.valid_range == (-42.5, 42.5)
