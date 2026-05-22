@@ -30,6 +30,22 @@ def test_parser_skip_flags():
     assert ns.skip_shifts is False
 
 
+def test_sleep_seconds_flag():
+    parser = build_parser()
+    ns = parser.parse_args([
+        "sync", "--start", "2024-10-01", "--end", "2024-10-01",
+        "--plays-table", "p.d.nhl_plays",
+        "--sleep-seconds", "0.5",
+    ])
+    assert ns.sleep_seconds == 0.5
+
+    ns_default = parser.parse_args([
+        "sync", "--start", "2024-10-01", "--end", "2024-10-01",
+        "--plays-table", "p.d.nhl_plays",
+    ])
+    assert ns_default.sleep_seconds == 1.0
+
+
 def test_dry_run_does_not_call_writers():
     with patch("nhl_bigquery.cli.bigquery.Client") as mock_client, \
          patch("nhl_bigquery.cli.NHLAPIClient") as mock_api:

@@ -24,21 +24,36 @@ import pandas as pd
 from google.cloud import bigquery
 
 from nhl_bigquery._version import __version__
+from nhl_bigquery.boxscore.schema import BOXSCORE_SCHEMA, get_partitioning as boxscore_partitioning
 from nhl_bigquery.boxscore.transform import transform_boxscore_to_df
 from nhl_bigquery.client import NHLAPIClient
+from nhl_bigquery.games.schema import GAMES_SCHEMA, get_partitioning as games_partitioning
 from nhl_bigquery.games.transform import (
     transform_landing_to_games_row, transform_score_to_games_rows,
 )
+from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA, get_partitioning as officials_partitioning
 from nhl_bigquery.officials.transform import transform_right_rail_to_officials_df
+from nhl_bigquery.plays.schema import PLAYS_SCHEMA, get_partitioning as plays_partitioning
 from nhl_bigquery.plays.transform import transform_game_to_plays_df
 from nhl_bigquery.runs import RunsTable, RunsTableRef, iter_chunks
+from nhl_bigquery.schema import ColumnSpec
+from nhl_bigquery.shifts.schema import SHIFTS_SCHEMA, get_partitioning as shifts_partitioning
 from nhl_bigquery.shifts.transform import transform_shift_charts_to_df
+from nhl_bigquery.standings.schema import STANDINGS_SCHEMA, get_partitioning as standings_partitioning
 from nhl_bigquery.standings.transform import transform_standings_to_df
 from nhl_bigquery.writer import BigQueryWriter, TableRef
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(name)s] %(message)s")
 log = logging.getLogger("nhl-bigquery")
+
+
+def _to_bq_schema(specs: list[ColumnSpec]) -> list[bigquery.SchemaField]:
+    """Convert a list of ColumnSpec objects to BigQuery SchemaField list."""
+    return [
+        bigquery.SchemaField(name=s.name, field_type=s.type, mode=s.mode)
+        for s in specs
+    ]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,6 +81,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--chunk-by", default="month", choices=["year", "month", "range"])
     p.add_argument("--resume", action="store_true")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--sleep-seconds", type=float, default=1.0,
+                   help="API politeness sleep in seconds (default 1.0; "
+                        "lower = faster backfill but higher 429 risk).")
 
     # docs (filled in Task 23)
     p_docs = sub.add_parser("docs", help="Render documentation in various formats")
@@ -102,7 +120,7 @@ def _default_ref(plays_table: str, suffix: str) -> str:
 
 def cmd_sync(ns: argparse.Namespace) -> int:
     plays_ref = TableRef.parse(ns.plays_table)
-    api = NHLAPIClient()
+    api = NHLAPIClient(sleep_seconds=ns.sleep_seconds)
     chunks = iter_chunks(ns.start, ns.end, ns.chunk_by)
     log.info("planned %d chunks (by %s)", len(chunks), ns.chunk_by)
 
@@ -210,7 +228,45 @@ def cmd_sync(ns: argparse.Namespace) -> int:
                     if not shifts_df.empty:
                         shifts_rows.append(shifts_df)
 
-            # Step 3: write in deterministic order
+            # Step 3: ensure all tables exist before writing
+            if plays_ref is not None:
+                p = plays_partitioning()
+                writer.create_table_if_missing(
+                    plays_ref, _to_bq_schema(PLAYS_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+            if games_ref is not None:
+                p = games_partitioning()
+                writer.create_table_if_missing(
+                    games_ref, _to_bq_schema(GAMES_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+            if officials_ref is not None:
+                p = officials_partitioning()
+                writer.create_table_if_missing(
+                    officials_ref, _to_bq_schema(OFFICIALS_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+            if boxscore_ref is not None:
+                p = boxscore_partitioning()
+                writer.create_table_if_missing(
+                    boxscore_ref, _to_bq_schema(BOXSCORE_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+            if shifts_ref is not None:
+                p = shifts_partitioning()
+                writer.create_table_if_missing(
+                    shifts_ref, _to_bq_schema(SHIFTS_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+            if standings_ref is not None:
+                p = standings_partitioning()
+                writer.create_table_if_missing(
+                    standings_ref, _to_bq_schema(STANDINGS_SCHEMA),
+                    partition_field=p.field, clustering=p.clustering or None,
+                )
+
+            # Step 4: write in deterministic order
             def _concat_and_write(table_ref: TableRef | None, dfs: list[pd.DataFrame],
                                   partition_field: str, kind: str) -> int:
                 if table_ref is None or not dfs:
