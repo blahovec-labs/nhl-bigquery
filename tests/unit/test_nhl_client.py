@@ -57,3 +57,18 @@ def test_get_standings_for_date():
         json={"standings": []}, status=200)
     client = NHLAPIClient(sleep_seconds=0)
     assert client.get_standings("2024-10-08") == {"standings": []}
+
+
+@responses.activate
+def test_get_shift_charts_uses_legacy_endpoint():
+    responses.add(responses.GET,
+        "https://api.nhle.com/stats/rest/en/shiftcharts",
+        json={"data": [{"playerId": 8478402, "shiftNumber": 1,
+                        "period": 1, "startTime": "0:00", "endTime": "0:30"}],
+              "total": 1},
+        status=200,
+        match=[responses.matchers.query_string_matcher("cayenneExp=gameId=2024020001")])
+    client = NHLAPIClient(sleep_seconds=0)
+    result = client.get_shift_charts(2024020001)
+    assert result["total"] == 1
+    assert result["data"][0]["playerId"] == 8478402

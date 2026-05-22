@@ -1,4 +1,8 @@
-"""NHLAPIClient: thin wrapper around api-web.nhle.com/v1 with retry + politeness."""
+"""NHLAPIClient: thin wrapper around api-web.nhle.com/v1 with retry + politeness.
+
+Shift-chart data lives on the legacy stats API (api.nhle.com/stats/rest/en),
+not the v1 game-center API. LEGACY_STATS_URL is used for that endpoint only.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +15,7 @@ import requests
 log = logging.getLogger(__name__)
 
 BASE_URL: Final[str] = "https://api-web.nhle.com/v1"
+LEGACY_STATS_URL: Final[str] = "https://api.nhle.com/stats/rest/en"
 DEFAULT_SLEEP_SECONDS: Final[float] = 1.0
 DEFAULT_TIMEOUT_SECONDS: Final[float] = 30.0
 DEFAULT_MAX_RETRIES: Final[int] = 5
@@ -31,8 +36,8 @@ class NHLAPIClient:
         self.max_retries = max_retries
         self.base_url = base_url
 
-    def _get(self, path: str) -> dict[str, Any]:
-        url = f"{self.base_url}{path}"
+    def _get_url(self, url: str) -> dict[str, Any]:
+        """Fetch *url* with retry + exponential backoff."""
         attempt = 0
         last_err: Exception | None = None
         while attempt < self.max_retries:
@@ -49,11 +54,14 @@ class NHLAPIClient:
                 last_err = e
                 backoff = self.sleep_seconds * (2 ** (attempt - 1)) if self.sleep_seconds else 0
                 log.warning("GET %s attempt %d failed: %s; backoff %.1fs",
-                            path, attempt, e, backoff)
+                            url, attempt, e, backoff)
                 if backoff:
                     time.sleep(backoff)
         assert last_err is not None
         raise last_err
+
+    def _get(self, path: str) -> dict[str, Any]:
+        return self._get_url(f"{self.base_url}{path}")
 
     def get_score(self, date: str) -> dict[str, Any]:
         return self._get(f"/score/{date}")
@@ -68,7 +76,7 @@ class NHLAPIClient:
         return self._get(f"/gamecenter/{game_id}/play-by-play")
 
     def get_shift_charts(self, game_id: int) -> dict[str, Any]:
-        return self._get(f"/gamecenter/{game_id}/shift-charts")
+        return self._get_url(f"{LEGACY_STATS_URL}/shiftcharts?cayenneExp=gameId={game_id}")
 
     def get_right_rail(self, game_id: int) -> dict[str, Any]:
         return self._get(f"/gamecenter/{game_id}/right-rail")

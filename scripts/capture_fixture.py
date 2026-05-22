@@ -12,8 +12,6 @@ import json
 import sys
 from pathlib import Path
 
-import requests
-
 from nhl_bigquery.client import NHLAPIClient
 
 
@@ -31,14 +29,7 @@ def capture_game(game_id: int, out_root: Path) -> None:
     for name, fn in endpoints.items():
         out = game_dir / f"{name}.json"
         print(f"  {name} -> {out}", flush=True)
-        try:
-            payload = fn(game_id)
-        except requests.HTTPError as exc:
-            if exc.response is not None and exc.response.status_code == 404:
-                print(f"    WARNING: 404 for {name}; saving empty object", flush=True)
-                payload = {}
-            else:
-                raise
+        payload = fn(game_id)
         out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
