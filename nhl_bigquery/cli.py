@@ -13,9 +13,11 @@ The sync command implements the lockstep chunked pipeline:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from datetime import date as _date, datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -246,8 +248,67 @@ def cmd_sync(ns: argparse.Namespace) -> int:
 
 
 def cmd_docs(ns: argparse.Namespace) -> int:
-    # Implemented in Task 23
-    raise NotImplementedError("docs command — implemented in Task 23")
+    from nhl_bigquery.docs.renderers import (
+        apply_data_dictionary, render_bq_descriptions, render_data_dictionary,
+        render_dbt_yaml, render_llm_context, render_markdown,
+    )
+    from nhl_bigquery.docs.taxonomy import TABLES
+
+    if ns.format == "bq-apply":
+        if not ns.table:
+            log.error("--table required for bq-apply")
+            return 2
+        ref = TableRef.parse(ns.table)
+        client = bigquery.Client()
+        table = client.get_table(str(ref))
+        # Try direct match first, then suffix match
+        kind = ref.table if ref.table in TABLES else None
+        if kind is None:
+            for k in TABLES:
+                if ref.table.endswith(k) or ref.table == k:
+                    kind = k
+                    break
+        if kind is None:
+            log.error("could not infer table_kind from %s; expected suffix in %s",
+                      ref.table, list(TABLES.keys()))
+            return 2
+        table.schema = render_bq_descriptions(table_kind=kind)
+        client.update_table(table, ["schema"])
+        log.info("updated descriptions on %s", ref)
+        return 0
+
+    if ns.format == "dictionary":
+        if not (ns.dataset and ns.table):
+            log.error("--dataset and --table required for dictionary")
+            return 2
+        ref = TableRef.parse(ns.table)
+        if ns.apply:
+            if not ns.dictionary_table:
+                log.error("--dictionary-table required with --apply")
+                return 2
+            client = bigquery.Client()
+            n = apply_data_dictionary(
+                client=client, dictionary_table=ns.dictionary_table,
+                dataset=ns.dataset, table=ref.table,
+            )
+            log.info("applied %d rows to %s", n, ns.dictionary_table)
+            return 0
+        out = json.dumps(render_data_dictionary(dataset=ns.dataset, table=ref.table),
+                         indent=2)
+    elif ns.format == "llm":
+        out = render_llm_context()
+    elif ns.format == "markdown":
+        out = render_markdown()
+    elif ns.format == "dbt":
+        out = render_dbt_yaml()
+    else:
+        raise AssertionError(f"unhandled format {ns.format}")
+
+    if ns.output == "-":
+        sys.stdout.write(out)
+    else:
+        Path(ns.output).write_text(out, encoding="utf-8")
+    return 0
 
 
 def cmd_verify(ns: argparse.Namespace) -> int:
