@@ -18,9 +18,22 @@ STANDINGS_SCHEMA: list[ColumnSpec] = [
          "Date the standings were captured (sourced from /standings/{date}).",
          tags=["temporal", "identifier"], example="2024-10-08",
          api_eq=None, api_src="(date passed to /standings/{date})"),
-    _col("team_id", "INT64", "REQUIRED", "Team ID.",
-         "NHL team_id.", tags=["identifier", "join_key", "team"], example=10,
-         api_eq="teamCommonName.id (or teamAbbrev.id)", api_src="teamAbbrev.id"),
+    # GOTCHA: The NHL /standings/{date} API does NOT expose a numeric team_id —
+    # only teamAbbrev.default is returned.  This column is therefore NULL for every
+    # row produced by the standings transform.  To resolve to a team_id, join:
+    #   standings.team_abbrev = games.home_team_abbrev  → games.home_team_id
+    #   standings.team_abbrev = games.away_team_abbrev  → games.away_team_id
+    _col("team_id", "INT64", "NULLABLE", "Team ID.",
+         "NHL team_id. NULL when not exposed by /standings (the v1 API only returns "
+         "team_abbrev). Join on team_abbrev to games.home_team_abbrev/away_team_abbrev "
+         "to resolve.",
+         tags=["identifier", "join_key", "team"], example=10,
+         api_eq="teamCommonName.id (or teamAbbrev.id)", api_src="teamAbbrev.id",
+         gotchas=[
+             "NULL for all rows from /standings/{date} — the API exposes only "
+             "team_abbrev. Join standings.team_abbrev → games.home_team_abbrev or "
+             "games.away_team_abbrev to get team_id.",
+         ]),
     _col("team_abbrev", "STRING", "NULLABLE", "Team 3-letter abbreviation.",
          "Three-letter team abbreviation.", tags=["team"], example="TOR",
          api_eq="teamAbbrev.default", api_src="teamAbbrev.default"),
