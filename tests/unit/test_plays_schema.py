@@ -94,3 +94,22 @@ def test_player_role_columns_are_nullable_int64():
         if spec.name in role_cols:
             assert spec.type == "INT64", f"{spec.name}: type"
             assert spec.mode == "NULLABLE", f"{spec.name}: mode"
+
+
+def test_group_d_columns_present():
+    names = {c.name for c in PLAYS_SCHEMA}
+    expected = {
+        "shot_type",
+        "penalty_minutes", "penalty_severity", "penalty_type_code", "penalty_type_desc",
+        "home_score_before", "away_score_before",
+        "home_score_after", "away_score_after",
+        "home_team_id", "away_team_id", "home_team_abbrev", "away_team_abbrev",
+    }
+    missing = expected - names
+    assert not missing, f"missing columns: {missing}"
+
+
+def test_penalty_severity_has_valid_values():
+    spec = next(c for c in PLAYS_SCHEMA if c.name == "penalty_severity")
+    assert "MIN" in (spec.valid_values or [])
+    assert "MAJ" in (spec.valid_values or [])

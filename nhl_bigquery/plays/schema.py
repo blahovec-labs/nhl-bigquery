@@ -624,4 +624,221 @@ PLAYS_SCHEMA: list[ColumnSpec] = [
         nhl_api_source_field="details.playerId",
         deprecated_in_year=None,
     ),
+    # -------------------------------------------------------------------------
+    # Group D: Shot details + penalty details + score state + team context
+    # -------------------------------------------------------------------------
+    ColumnSpec(
+        name="shot_type",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Shot type (wrist, slap, snap, backhand, tip-in, ...).",
+        business_definition=(
+            "Type of shot taken on SHOT, MISSED_SHOT, GOAL, BLOCKED_SHOT events. "
+            "Common values: wrist, slap, snap, backhand, tip-in, deflected, "
+            "wrap-around, poke."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=None,
+        valid_values=["wrist", "slap", "snap", "backhand", "tip-in", "deflected",
+                      "wrap-around", "poke", "bat"],
+        example_value="wrist",
+        gotchas=[
+            "Lowercase from API — preserved verbatim.",
+        ],
+        nhl_api_equivalent="details.shotType",
+        nhl_api_source_field="details.shotType",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="penalty_minutes",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Penalty duration in minutes (PENALTY).",
+        business_definition=(
+            "Number of minutes assessed for the penalty. Common values: 2 (minor), "
+            "4 (double minor), 5 (major), 10 (misconduct). Populated only for "
+            "event_type='PENALTY'."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=(2.0, 20.0), valid_values=None, example_value=2,
+        gotchas=[],
+        nhl_api_equivalent="details.duration",
+        nhl_api_source_field="details.duration",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="penalty_severity",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Penalty severity code (MIN/MAJ/MIS/BEN/MAT/GAM/PS).",
+        business_definition=(
+            "Severity classification. MIN=minor, MAJ=major, MIS=misconduct, "
+            "BEN=bench minor, MAT=match, GAM=game misconduct, PS=penalty shot."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=None,
+        valid_values=["MIN", "MAJ", "MIS", "BEN", "MAT", "GAM", "PS"],
+        example_value="MIN",
+        gotchas=[],
+        nhl_api_equivalent="details.typeCode (mapped)",
+        nhl_api_source_field="details.typeCode",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="penalty_type_code",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Raw NHL penalty type code.",
+        business_definition=(
+            "Short code from the NHL API identifying the specific infraction "
+            "(e.g., 'HOOK' for hooking, 'TRIP' for tripping). Preserved verbatim."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=None, valid_values=None, example_value="HOOK",
+        gotchas=[],
+        nhl_api_equivalent="details.typeCode",
+        nhl_api_source_field="details.typeCode",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="penalty_type_desc",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Human-readable penalty description.",
+        business_definition=(
+            "Full English description of the penalty (e.g., 'Hooking', 'Tripping'). "
+            "Display-only; use penalty_type_code for filtering."
+        ),
+        semantic_tags=["event_context"],
+        valid_range=None, valid_values=None, example_value="Hooking",
+        gotchas=[],
+        nhl_api_equivalent="details.descKey",
+        nhl_api_source_field="details.descKey",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_score_before",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Home team score before this event.",
+        business_definition=(
+            "Home team goal count immediately before the event resolves. For a "
+            "GOAL event scored by home, home_score_after = home_score_before + 1."
+        ),
+        semantic_tags=["score_state"],
+        valid_range=(0.0, 20.0), valid_values=None, example_value=2,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived: details.homeScore minus 1 if this is a home GOAL)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_score_before",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Away team score before this event.",
+        business_definition=(
+            "Away team goal count immediately before the event resolves."
+        ),
+        semantic_tags=["score_state"],
+        valid_range=(0.0, 20.0), valid_values=None, example_value=1,
+        gotchas=[],
+        nhl_api_equivalent=None,
+        nhl_api_source_field="(derived: details.awayScore minus 1 if this is an away GOAL)",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_score_after",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Home team score after this event.",
+        business_definition=(
+            "Home team goal count immediately after the event resolves."
+        ),
+        semantic_tags=["score_state"],
+        valid_range=(0.0, 20.0), valid_values=None, example_value=3,
+        gotchas=[],
+        nhl_api_equivalent="details.homeScore",
+        nhl_api_source_field="details.homeScore",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_score_after",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Away team score after this event.",
+        business_definition=(
+            "Away team goal count immediately after the event resolves."
+        ),
+        semantic_tags=["score_state"],
+        valid_range=(0.0, 20.0), valid_values=None, example_value=1,
+        gotchas=[],
+        nhl_api_equivalent="details.awayScore",
+        nhl_api_source_field="details.awayScore",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_team_id",
+        type="INT64",
+        mode="REQUIRED",
+        short_description="NHL team ID of the home team.",
+        business_definition=(
+            "NHL team ID for the home team in this game. Stable across seasons; "
+            "use to join to team dimension tables."
+        ),
+        semantic_tags=["identifier", "join_key", "team"],
+        valid_range=None, valid_values=None, example_value=10,
+        gotchas=[],
+        nhl_api_equivalent="homeTeam.id",
+        nhl_api_source_field="homeTeam.id",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_team_id",
+        type="INT64",
+        mode="REQUIRED",
+        short_description="NHL team ID of the away team.",
+        business_definition=(
+            "NHL team ID for the away team in this game. Stable across seasons."
+        ),
+        semantic_tags=["identifier", "join_key", "team"],
+        valid_range=None, valid_values=None, example_value=6,
+        gotchas=[],
+        nhl_api_equivalent="awayTeam.id",
+        nhl_api_source_field="awayTeam.id",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="home_team_abbrev",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Home team 3-letter abbreviation.",
+        business_definition=(
+            "Three-letter abbreviation for the home team (e.g., TOR, EDM, NYR). "
+            "Denormalized from games for partition-prune-friendly filters."
+        ),
+        semantic_tags=["team", "identifier"],
+        valid_range=None, valid_values=None, example_value="TOR",
+        gotchas=[
+            "Abbreviations changed for relocations (e.g., ARI → UTA in 2024).",
+        ],
+        nhl_api_equivalent="homeTeam.abbrev",
+        nhl_api_source_field="homeTeam.abbrev",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="away_team_abbrev",
+        type="STRING",
+        mode="NULLABLE",
+        short_description="Away team 3-letter abbreviation.",
+        business_definition=(
+            "Three-letter abbreviation for the away team."
+        ),
+        semantic_tags=["team", "identifier"],
+        valid_range=None, valid_values=None, example_value="MTL",
+        gotchas=[],
+        nhl_api_equivalent="awayTeam.abbrev",
+        nhl_api_source_field="awayTeam.abbrev",
+        deprecated_in_year=None,
+    ),
 ]
