@@ -64,3 +64,33 @@ def test_coords_have_valid_range():
     y = next(c for c in PLAYS_SCHEMA if c.name == "y_coord")
     assert x.valid_range == (-100.0, 100.0)
     assert y.valid_range == (-42.5, 42.5)
+
+
+def test_group_c_player_columns_present():
+    names = {c.name for c in PLAYS_SCHEMA}
+    expected = {
+        "event_owner_team_id",
+        "shooter_id", "goalie_id", "scorer_id",
+        "primary_assist_id", "secondary_assist_id",
+        "hitter_id", "hittee_id",
+        "winning_player_id", "losing_player_id",
+        "drawn_by_id", "served_by_id",
+        "penalty_player_id", "blocker_id", "committed_by_id",
+    }
+    missing = expected - names
+    assert not missing, f"missing columns: {missing}"
+
+
+def test_player_role_columns_are_nullable_int64():
+    role_cols = {
+        "shooter_id", "goalie_id", "scorer_id",
+        "primary_assist_id", "secondary_assist_id",
+        "hitter_id", "hittee_id",
+        "winning_player_id", "losing_player_id",
+        "drawn_by_id", "served_by_id",
+        "penalty_player_id", "blocker_id", "committed_by_id",
+    }
+    for spec in PLAYS_SCHEMA:
+        if spec.name in role_cols:
+            assert spec.type == "INT64", f"{spec.name}: type"
+            assert spec.mode == "NULLABLE", f"{spec.name}: mode"

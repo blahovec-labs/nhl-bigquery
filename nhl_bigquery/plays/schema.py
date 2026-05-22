@@ -365,4 +365,263 @@ PLAYS_SCHEMA: list[ColumnSpec] = [
         nhl_api_source_field="(derived from details.zoneCode)",
         deprecated_in_year=None,
     ),
+    # -------------------------------------------------------------------------
+    # Group C: Players (wide-flat sparse)
+    # -------------------------------------------------------------------------
+    ColumnSpec(
+        name="event_owner_team_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Team ID that 'owns' this event (the actor).",
+        business_definition=(
+            "NHL team_id of the team performing the event. For a SHOT, this is "
+            "the shooting team; for a HIT, the hitting team; for a FACEOFF, the "
+            "team that won the faceoff (NULL if details.winningPlayerId is NULL)."
+        ),
+        semantic_tags=["identifier", "join_key", "team"],
+        valid_range=None, valid_values=None, example_value=10,
+        gotchas=[],
+        nhl_api_equivalent="details.eventOwnerTeamId",
+        nhl_api_source_field="details.eventOwnerTeamId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="shooter_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player attempting the shot (SHOT/MISSED_SHOT/GOAL/BLOCKED_SHOT).",
+        business_definition=(
+            "NHL Player ID of the player attempting the shot. Populated for "
+            "event_type IN ('SHOT', 'MISSED_SHOT', 'GOAL', 'BLOCKED_SHOT'). For "
+            "BLOCKED_SHOT, shooter_id is the *attempt* player; use blocker_id for "
+            "the defender."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478402,
+        gotchas=[
+            "BLOCKED_SHOT events: shooter_id = attempt; blocker_id = defender.",
+            "NULL for non-shot events.",
+        ],
+        nhl_api_equivalent="details.shootingPlayerId | details.scoringPlayerId",
+        nhl_api_source_field="details.shootingPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="goalie_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Goalie facing the shot (SHOT/MISSED_SHOT/GOAL).",
+        business_definition=(
+            "NHL Player ID of the goaltender in net facing the shot. NULL for "
+            "empty-net situations and for events without a goalie context."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8475883,
+        gotchas=[
+            "NULL on empty-net goals — check home_goalie_on_ice / away_goalie_on_ice.",
+        ],
+        nhl_api_equivalent="details.goalieInNetId",
+        nhl_api_source_field="details.goalieInNetId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="scorer_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Goal scorer (GOAL only).",
+        business_definition=(
+            "NHL Player ID of the goal scorer. Populated only for event_type='GOAL'. "
+            "Same player as shooter_id, but split out for clarity in goal-specific "
+            "queries."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478402,
+        gotchas=[
+            "Always equals shooter_id when event_type='GOAL'.",
+        ],
+        nhl_api_equivalent="details.scoringPlayerId",
+        nhl_api_source_field="details.scoringPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="primary_assist_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="First assister (GOAL).",
+        business_definition=(
+            "NHL Player ID of the primary assister. NULL if no assists were awarded "
+            "(unassisted goal)."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8479318,
+        gotchas=[],
+        nhl_api_equivalent="details.assist1PlayerId",
+        nhl_api_source_field="details.assist1PlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="secondary_assist_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Second assister (GOAL).",
+        business_definition=(
+            "NHL Player ID of the secondary assister. NULL if only one assist was "
+            "awarded or if unassisted."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8477956,
+        gotchas=[],
+        nhl_api_equivalent="details.assist2PlayerId",
+        nhl_api_source_field="details.assist2PlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="hitter_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player delivering the hit (HIT).",
+        business_definition=(
+            "NHL Player ID of the player delivering the body check. Populated only "
+            "for event_type='HIT'."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8476881,
+        gotchas=[],
+        nhl_api_equivalent="details.hittingPlayerId",
+        nhl_api_source_field="details.hittingPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="hittee_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player receiving the hit (HIT).",
+        business_definition=(
+            "NHL Player ID of the player on the receiving end of the body check. "
+            "Populated only for event_type='HIT'."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478402,
+        gotchas=[],
+        nhl_api_equivalent="details.hitteePlayerId",
+        nhl_api_source_field="details.hitteePlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="winning_player_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Faceoff winner (FACEOFF).",
+        business_definition=(
+            "NHL Player ID of the player who won the faceoff. Populated only for "
+            "event_type='FACEOFF'."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478403,
+        gotchas=[],
+        nhl_api_equivalent="details.winningPlayerId",
+        nhl_api_source_field="details.winningPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="losing_player_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Faceoff loser (FACEOFF).",
+        business_definition=(
+            "NHL Player ID of the player who lost the faceoff. Populated only for "
+            "event_type='FACEOFF'."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8474157,
+        gotchas=[],
+        nhl_api_equivalent="details.losingPlayerId",
+        nhl_api_source_field="details.losingPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="drawn_by_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player who drew a penalty (PENALTY).",
+        business_definition=(
+            "NHL Player ID of the player who drew (was fouled by) the penalty. "
+            "Populated only for event_type='PENALTY'."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478402,
+        gotchas=[
+            "NULL for unsportsmanlike / bench / coach's challenge penalties.",
+        ],
+        nhl_api_equivalent="details.drawnByPlayerId",
+        nhl_api_source_field="details.drawnByPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="served_by_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player serving a penalty for a teammate (PENALTY).",
+        business_definition=(
+            "NHL Player ID of the player serving the penalty. Differs from "
+            "penalty_player_id when a teammate serves (e.g., goalie/bench minors)."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8474157,
+        gotchas=[],
+        nhl_api_equivalent="details.servedByPlayerId",
+        nhl_api_source_field="details.servedByPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="penalty_player_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Penalty offender (PENALTY).",
+        business_definition=(
+            "NHL Player ID of the player who committed the penalty. May differ "
+            "from served_by_id when a teammate serves."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8476881,
+        gotchas=[],
+        nhl_api_equivalent="details.committedByPlayerId",
+        nhl_api_source_field="details.committedByPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="blocker_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Shot blocker (BLOCKED_SHOT).",
+        business_definition=(
+            "NHL Player ID of the player who blocked the shot. Populated only for "
+            "event_type='BLOCKED_SHOT'. shooter_id holds the attempt player."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8470794,
+        gotchas=[],
+        nhl_api_equivalent="details.blockingPlayerId",
+        nhl_api_source_field="details.blockingPlayerId",
+        deprecated_in_year=None,
+    ),
+    ColumnSpec(
+        name="committed_by_id",
+        type="INT64",
+        mode="NULLABLE",
+        short_description="Player who committed a turnover (GIVEAWAY/TAKEAWAY).",
+        business_definition=(
+            "NHL Player ID of the player who committed a giveaway or executed a "
+            "takeaway. Populated for event_type IN ('GIVEAWAY', 'TAKEAWAY')."
+        ),
+        semantic_tags=["identifier", "join_key", "player_event"],
+        valid_range=None, valid_values=None, example_value=8478402,
+        gotchas=[
+            "For GIVEAWAY, this is the player who turned over the puck.",
+            "For TAKEAWAY, this is the player who took it from the opponent.",
+        ],
+        nhl_api_equivalent="details.playerId",
+        nhl_api_source_field="details.playerId",
+        deprecated_in_year=None,
+    ),
 ]
