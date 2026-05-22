@@ -312,8 +312,48 @@ def cmd_docs(ns: argparse.Namespace) -> int:
 
 
 def cmd_verify(ns: argparse.Namespace) -> int:
-    # Implemented in Task 25
-    raise NotImplementedError("verify command — implemented in Task 25")
+    from nhl_bigquery.verify.internal import run_internal_checks
+    from nhl_bigquery.verify.nhl_api import (
+        verify_game_boxscore,
+        verify_player_season,
+        verify_team_season,
+    )
+
+    client = bigquery.Client()
+    api = NHLAPIClient()
+    table = ns.table
+    base = TableRef.parse(table)
+
+    if ns.source == "internal":
+        result = run_internal_checks(
+            client=client,
+            plays_table=table,
+            shifts_table=f"{base.project}.{base.dataset}.shifts",
+            games_table=f"{base.project}.{base.dataset}.games",
+        )
+    elif ns.source == "nhl-api":
+        if ns.aggregation == "team-season":
+            result = verify_team_season(
+                client=client, api=api, table=table, season=ns.season
+            )
+        elif ns.aggregation == "player-season":
+            result = verify_player_season(
+                client=client, api=api, table=table, season=ns.season,
+                min_sample_size=ns.min_sample_size,
+                tolerance=int(ns.tolerance or 0),
+            )
+        elif ns.aggregation == "game-boxscore":
+            # Convention: --season carries game_id for this aggregation.
+            result = verify_game_boxscore(
+                client=client, api=api, table=table, game_id=ns.season
+            )
+        else:
+            raise AssertionError(f"unsupported aggregation {ns.aggregation}")
+    else:
+        raise AssertionError(f"unsupported source {ns.source}")
+
+    print(result.summary())
+    return 0 if result.overall_pass else 1
 
 
 def main(argv: list[str] | None = None) -> int:
