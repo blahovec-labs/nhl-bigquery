@@ -10,7 +10,7 @@ from __future__ import annotations
 import calendar
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from google.cloud import bigquery
 
@@ -167,7 +167,7 @@ class RunsTable:
             "rows_written_shifts": rows_written.get("shifts"),
             "rows_written_standings": rows_written.get("standings"),
             "error": error,
-            "run_at": datetime.now(timezone.utc).isoformat(),
+            "run_at": datetime.now(UTC).isoformat(),
         }
         errors = self.client.insert_rows_json(str(ref), [row])
         if errors:

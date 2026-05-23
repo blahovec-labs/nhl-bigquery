@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
-
 
 _SKATER_FIELDS = (
     "goals", "assists", "points", "plusMinus", "pim", "hits", "blockedShots",
@@ -38,7 +37,7 @@ def transform_boxscore_to_df(bs: dict[str, Any]) -> pd.DataFrame:
     game_date = bs.get("gameDate")
     pgs = bs.get("playerByGameStats") or {}
     rows: list[dict[str, Any]] = []
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
 
     for side in ("awayTeam", "homeTeam"):
         team_id = int((bs.get(side) or {}).get("id"))
@@ -74,11 +73,15 @@ def transform_boxscore_to_df(bs: dict[str, Any]) -> pd.DataFrame:
                     parts = save_shots_raw.split("/")
                     try:
                         saves_int = saves_int if saves_int is not None else int(parts[0])
-                        shots_against_int = shots_against_int if shots_against_int is not None else int(parts[1])
+                        shots_against_int = (
+                            shots_against_int if shots_against_int is not None else int(parts[1])
+                        )
                     except (ValueError, IndexError):
                         pass
                 elif isinstance(save_shots_raw, (int, float)):
-                    shots_against_int = shots_against_int if shots_against_int is not None else int(save_shots_raw)
+                    shots_against_int = (
+                        shots_against_int if shots_against_int is not None else int(save_shots_raw)
+                    )
                 row["shots_against"] = shots_against_int
                 row["saves"] = saves_int
                 row["save_pctg"] = p.get("savePctg")

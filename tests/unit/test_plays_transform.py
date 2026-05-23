@@ -9,7 +9,8 @@ FIXTURES = Path(__file__).parent.parent / "fixtures"
 
 
 def _load(game_id: int, kind: str) -> dict:
-    return json.loads((FIXTURES / "games" / str(game_id) / f"{kind}.json").read_text(encoding="utf-8"))
+    path = FIXTURES / "games" / str(game_id) / f"{kind}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def test_transform_returns_dataframe_with_expected_columns(captured_game_id):

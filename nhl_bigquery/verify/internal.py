@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from google.cloud import bigquery
 
@@ -52,7 +52,8 @@ def _check_no_orphan_event_player(client, *, plays_table, **kw) -> tuple[int, in
 def _check_score_monotonic(client, *, plays_table, **kw) -> tuple[int, int]:
     sql = f"""
     SELECT
-      SUM(IF(home_score_after < home_score_before OR away_score_after < away_score_before, 1, 0)) AS violations,
+      SUM(IF(home_score_after < home_score_before
+             OR away_score_after < away_score_before, 1, 0)) AS violations,
       COUNT(*) AS total
     FROM `{plays_table}`
     WHERE home_score_before IS NOT NULL AND home_score_after IS NOT NULL
@@ -64,7 +65,8 @@ def _check_period_time_in_bounds(client, *, plays_table, **kw) -> tuple[int, int
     sql = f"""
     SELECT
       SUM(IF(time_in_period IS NOT NULL
-             AND SAFE_CAST(SPLIT(time_in_period, ':')[OFFSET(0)] AS INT64) > 20, 1, 0)) AS violations,
+             AND SAFE_CAST(SPLIT(time_in_period, ':')[OFFSET(0)] AS INT64) > 20,
+             1, 0)) AS violations,
       COUNT(*) AS total
     FROM `{plays_table}`
     """

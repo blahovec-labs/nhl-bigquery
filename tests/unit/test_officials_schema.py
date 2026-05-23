@@ -1,6 +1,5 @@
 """Unit tests for OFFICIALS_SCHEMA."""
 
-import pytest
 
 from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA, get_partitioning
 
@@ -14,7 +13,9 @@ def test_partitioning():
 
 def test_required_columns_present():
     names = [col.name for col in OFFICIALS_SCHEMA]
-    assert names == ["game_id", "game_date", "role", "official_name", "official_number", "ingested_at"]
+    assert names == [
+        "game_id", "game_date", "role", "official_name", "official_number", "ingested_at",
+    ]
 
 
 def test_role_valid_values():

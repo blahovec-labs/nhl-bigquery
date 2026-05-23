@@ -1,6 +1,7 @@
 # tests/unit/test_plays_merge.py
 from nhl_bigquery.plays.merge import (
-    OnIceResult, build_on_ice_at_event, parse_shifts,
+    build_on_ice_at_event,
+    parse_shifts,
 )
 
 

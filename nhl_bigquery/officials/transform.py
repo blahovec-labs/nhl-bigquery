@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -14,7 +14,7 @@ def transform_right_rail_to_officials_df(
     """Extract referees + linesmen into a long-format DataFrame."""
     info = (rr or {}).get("gameInfo") or {}
     rows = []
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
 
     for i, ref in enumerate(info.get("referees") or [], start=1):
         rows.append({

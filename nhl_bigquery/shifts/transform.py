@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -14,7 +14,7 @@ def transform_shift_charts_to_df(
     sc: dict[str, Any], *, game_date: str
 ) -> pd.DataFrame:
     """Convert shift-charts response to a per-shift DataFrame."""
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
     rows = []
     for s in (sc or {}).get("data") or []:
         try:

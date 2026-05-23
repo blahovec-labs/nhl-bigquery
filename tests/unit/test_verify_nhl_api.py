@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 from nhl_bigquery.verify.nhl_api import (
-    verify_game_boxscore,
     verify_player_season,
     verify_team_season,
 )

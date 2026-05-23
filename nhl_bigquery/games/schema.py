@@ -27,7 +27,8 @@ def _col(name, type, mode, short, defn, *, tags=None, range_=None, values=None,
 GAMES_SCHEMA: list[ColumnSpec] = [
     _col("game_id", "INT64", "REQUIRED",
          "NHL unique game identifier.",
-         "Stable integer identifying a single NHL game. Canonical join key to nhl_plays / boxscore_stats / shifts.",
+         "Stable integer identifying a single NHL game. "
+         "Canonical join key to nhl_plays / boxscore_stats / shifts.",
          tags=["identifier", "join_key"], example=2024020001,
          api_eq="id", api_src="id"),
     _col("game_date", "DATE", "REQUIRED",
@@ -42,7 +43,8 @@ GAMES_SCHEMA: list[ColumnSpec] = [
          api_eq="season (first 4 digits)", api_src="season"),
     _col("game_type", "STRING", "NULLABLE",
          "Game type code (PR/R/P/AS).",
-         "Game type derived from the game_id type digit: PR=preseason, R=regular, P=playoffs, AS=all-star.",
+         "Game type derived from the game_id type digit: "
+         "PR=preseason, R=regular, P=playoffs, AS=all-star.",
          tags=["identifier"], values=["PR", "R", "P", "AS"], example="R",
          api_eq="gameType (numeric → coded)", api_src="gameType"),
     _col("home_team_id", "INT64", "REQUIRED",
@@ -78,7 +80,8 @@ GAMES_SCHEMA: list[ColumnSpec] = [
          api_eq="startTimeUTC", api_src="startTimeUTC"),
     _col("eastern_utc_offset", "STRING", "NULLABLE",
          "Eastern UTC offset for the game date.",
-         "Eastern Time UTC offset (e.g. '-04:00'). Useful for converting to NHL canonical Eastern time.",
+         "Eastern Time UTC offset (e.g. '-04:00'). "
+         "Useful for converting to NHL canonical Eastern time.",
          tags=["temporal"], example="-04:00",
          api_eq="easternUTCOffset", api_src="easternUTCOffset"),
     _col("venue_utc_offset", "STRING", "NULLABLE",
@@ -88,13 +91,15 @@ GAMES_SCHEMA: list[ColumnSpec] = [
          api_eq="venueUTCOffset", api_src="venueUTCOffset"),
     _col("game_state", "STRING", "NULLABLE",
          "Game state (FUT/PRE/LIVE/CRIT/FINAL/OFF).",
-         "Lifecycle state of the game. FUT=scheduled-future, PRE=pre-game, LIVE=in-progress, CRIT=last-minute, FINAL=just-ended, OFF=archived.",
+         "Lifecycle state of the game. FUT=scheduled-future, PRE=pre-game, "
+         "LIVE=in-progress, CRIT=last-minute, FINAL=just-ended, OFF=archived.",
          tags=["status"], values=["FUT", "PRE", "LIVE", "CRIT", "FINAL", "OFF"], example="OFF",
          gotchas=["Filter game_state IN ('FINAL','OFF') for completed games."],
          api_eq="gameState", api_src="gameState"),
     _col("final_period_type", "STRING", "NULLABLE",
          "Period type at game end (REG/OT/SO).",
-         "Type of the last period played. REG=ended in regulation, OT=overtime decided, SO=shootout decided.",
+         "Type of the last period played. REG=ended in regulation, "
+         "OT=overtime decided, SO=shootout decided.",
          tags=["status"], values=["REG", "OT", "SO"], example="REG",
          api_eq="gameOutcome.lastPeriodType", api_src="gameOutcome.lastPeriodType"),
     _col("home_score_final", "INT64", "NULLABLE",
@@ -109,7 +114,8 @@ GAMES_SCHEMA: list[ColumnSpec] = [
          api_eq="awayTeam.score", api_src="awayTeam.score"),
     _col("is_shootout_decided", "BOOL", "NULLABLE",
          "Was the game decided in a shootout?",
-         "Derived: final_period_type == 'SO'. Convenience flag for filtering shootout games out of skater stats.",
+         "Derived: final_period_type == 'SO'. "
+         "Convenience flag for filtering shootout games out of skater stats.",
          tags=["status"], example=False,
          api_eq=None, api_src="(derived)"),
     _col("ingested_at", "TIMESTAMP", "REQUIRED",

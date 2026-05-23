@@ -1,8 +1,10 @@
-from datetime import datetime
 
 from nhl_bigquery.docs.renderers import (
-    render_bq_descriptions, render_data_dictionary, render_dbt_yaml,
-    render_llm_context, render_markdown,
+    render_bq_descriptions,
+    render_data_dictionary,
+    render_dbt_yaml,
+    render_llm_context,
+    render_markdown,
 )
 
 

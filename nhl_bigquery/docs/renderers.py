@@ -4,7 +4,7 @@ markdown, and dbt YAML."""
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from google.cloud import bigquery
@@ -95,7 +95,7 @@ def render_data_dictionary(*, dataset: str, table: str) -> list[dict[str, Any]]:
     *table* must be a canonical TABLES key (e.g. ``"nhl_plays"``).
     """
     schema = TABLES[table]["schema"]
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     return [
         {
             "dataset": dataset,
@@ -161,7 +161,7 @@ def render_dbt_yaml() -> str:
     for tbl, meta in TABLES.items():
         lines.append(f"  - name: {tbl}")
         lines.append(f'    description: "nhl-bigquery {tbl} table"')
-        lines.append(f"    columns:")
+        lines.append("    columns:")
         for spec in meta["schema"]:
             short = spec.short_description.replace('"', "'")
             lines.append(f"      - name: {spec.name}")

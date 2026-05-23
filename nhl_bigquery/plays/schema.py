@@ -271,7 +271,10 @@ PLAYS_SCHEMA: list[ColumnSpec] = [
         name="situation_code",
         type="STRING",
         mode="NULLABLE",
-        short_description="4-digit on-ice strength code (away_goalie/away_skaters/home_skaters/home_goalie).",
+        short_description=(
+            "4-digit on-ice strength code "
+            "(away_goalie/away_skaters/home_skaters/home_goalie)."
+        ),
         business_definition=(
             "4-character code from the NHL API encoding (away_goalie, away_skaters, "
             "home_skaters, home_goalie) at the time of the event. '1551' is "

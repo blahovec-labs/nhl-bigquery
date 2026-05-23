@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -12,7 +12,7 @@ _GAME_TYPE_MAP = {1: "PR", 2: "R", 3: "P", 4: "AS"}
 
 def transform_score_to_games_rows(score_resp: dict[str, Any], *, date: str) -> pd.DataFrame:
     """Convert /score/{date} response to bare games rows (no landing enrichment)."""
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
     rows = []
     for g in score_resp.get("games", []):
         game_type_int = int(g.get("gameType") or 2)
@@ -66,5 +66,5 @@ def transform_landing_to_games_row(landing: dict[str, Any]) -> dict[str, Any]:
         "home_score_final": home.get("score"),
         "away_score_final": away.get("score"),
         "is_shootout_decided": last_period == "SO" if last_period else None,
-        "ingested_at": datetime.now(timezone.utc),
+        "ingested_at": datetime.now(UTC),
     }

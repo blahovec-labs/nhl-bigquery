@@ -1,6 +1,6 @@
 import pytest
 
-from nhl_bigquery.schema import BqMode, BqType, ColumnSpec, PartitioningSpec
+from nhl_bigquery.schema import ColumnSpec, PartitioningSpec
 
 
 def test_columnspec_validates_required_business_definition():

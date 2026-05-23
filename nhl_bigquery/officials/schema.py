@@ -25,7 +25,8 @@ OFFICIALS_SCHEMA: list = [
          api_eq="gameDate", api_src="gameDate"),
     _col("role", "STRING", "REQUIRED",
          "Official role in this game.",
-         "Designates which officiating position this official held: REFEREE_1, REFEREE_2, LINESMAN_1, or LINESMAN_2.",
+         "Designates which officiating position this official held: "
+         "REFEREE_1, REFEREE_2, LINESMAN_1, or LINESMAN_2.",
          tags=["identifier"], values=["REFEREE_1", "REFEREE_2", "LINESMAN_1", "LINESMAN_2"],
          example="REFEREE_1",
          api_eq="officials[].position", api_src="officials[].position"),

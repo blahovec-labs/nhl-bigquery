@@ -1,5 +1,3 @@
-from io import StringIO
-from unittest.mock import patch
 
 from nhl_bigquery.cli import main
 

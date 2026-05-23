@@ -10,7 +10,7 @@ Output: pandas DataFrame with rows aligned to PLAYS_SCHEMA columns.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -45,7 +45,9 @@ _PENALTY_SEVERITY_MAP = {
 }
 
 
-def _decode_situation_code(sc: str | None) -> tuple[int | None, int | None, bool | None, bool | None]:
+def _decode_situation_code(
+    sc: str | None,
+) -> tuple[int | None, int | None, bool | None, bool | None]:
     """Decode '1551' → (away_skaters, home_skaters, away_goalie, home_goalie)."""
     if not sc or len(sc) != 4 or not sc.isdigit():
         return (None, None, None, None)
@@ -113,9 +115,7 @@ def transform_game_to_plays_df(
     # Parse shifts once for the entire game
     raw_shifts = (shift_charts or {}).get("data") or []
     parsed_shifts = parse_shifts(raw_shifts)
-    has_shifts = bool(parsed_shifts)
-
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
 
     # Track score state running totals (the API gives post-event scores
     # in details.homeScore/details.awayScore; we derive pre-event by
@@ -188,8 +188,12 @@ def transform_game_to_plays_df(
         # Score state: NHL API gives post-event scores
         home_score_after = details.get("homeScore")
         away_score_after = details.get("awayScore")
-        row["home_score_after"] = home_score_after if home_score_after is not None else prev_home_score
-        row["away_score_after"] = away_score_after if away_score_after is not None else prev_away_score
+        row["home_score_after"] = (
+            home_score_after if home_score_after is not None else prev_home_score
+        )
+        row["away_score_after"] = (
+            away_score_after if away_score_after is not None else prev_away_score
+        )
         row["home_score_before"] = prev_home_score
         row["away_score_before"] = prev_away_score
         prev_home_score = row["home_score_after"] or prev_home_score

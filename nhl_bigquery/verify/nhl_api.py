@@ -3,7 +3,8 @@
 Three aggregations:
   verify_team_season    — reconstructs W/L/OTL/PTS/GF/GA from plays, compares to /standings
   verify_player_season  — reconstructs G/A/Pts/+- etc. from plays, compares to /player/{id}/landing
-  verify_game_boxscore  — reconstructs per-player stats for one game, compares to /gamecenter/{id}/boxscore
+  verify_game_boxscore  — reconstructs per-player stats for one game,
+                          compares to /gamecenter/{id}/boxscore
 """
 
 from __future__ import annotations

@@ -15,7 +15,6 @@ from nhl_bigquery.shifts.schema import get_partitioning as shifts_part
 from nhl_bigquery.standings.schema import STANDINGS_SCHEMA
 from nhl_bigquery.standings.schema import get_partitioning as standings_part
 
-
 TABLES: dict[str, dict] = {
     "nhl_plays":     {"schema": PLAYS_SCHEMA,     "partitioning": plays_part()},
     "games":         {"schema": GAMES_SCHEMA,     "partitioning": games_part()},

@@ -16,30 +16,36 @@ import argparse
 import json
 import logging
 import sys
-from datetime import date as _date, datetime, timezone
+from datetime import date as _date
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from google.cloud import bigquery
 
 from nhl_bigquery._version import __version__
-from nhl_bigquery.boxscore.schema import BOXSCORE_SCHEMA, get_partitioning as boxscore_partitioning
+from nhl_bigquery.boxscore.schema import BOXSCORE_SCHEMA
+from nhl_bigquery.boxscore.schema import get_partitioning as boxscore_partitioning
 from nhl_bigquery.boxscore.transform import transform_boxscore_to_df
 from nhl_bigquery.client import NHLAPIClient
-from nhl_bigquery.games.schema import GAMES_SCHEMA, get_partitioning as games_partitioning
+from nhl_bigquery.games.schema import GAMES_SCHEMA
+from nhl_bigquery.games.schema import get_partitioning as games_partitioning
 from nhl_bigquery.games.transform import (
-    transform_landing_to_games_row, transform_score_to_games_rows,
+    transform_landing_to_games_row,
+    transform_score_to_games_rows,
 )
-from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA, get_partitioning as officials_partitioning
+from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA
+from nhl_bigquery.officials.schema import get_partitioning as officials_partitioning
 from nhl_bigquery.officials.transform import transform_right_rail_to_officials_df
-from nhl_bigquery.plays.schema import PLAYS_SCHEMA, get_partitioning as plays_partitioning
+from nhl_bigquery.plays.schema import PLAYS_SCHEMA
+from nhl_bigquery.plays.schema import get_partitioning as plays_partitioning
 from nhl_bigquery.plays.transform import transform_game_to_plays_df
 from nhl_bigquery.runs import RunsTable, RunsTableRef, iter_chunks
 from nhl_bigquery.schema import ColumnSpec
-from nhl_bigquery.shifts.schema import SHIFTS_SCHEMA, get_partitioning as shifts_partitioning
+from nhl_bigquery.shifts.schema import SHIFTS_SCHEMA
+from nhl_bigquery.shifts.schema import get_partitioning as shifts_partitioning
 from nhl_bigquery.shifts.transform import transform_shift_charts_to_df
-from nhl_bigquery.standings.schema import STANDINGS_SCHEMA, get_partitioning as standings_partitioning
+from nhl_bigquery.standings.schema import STANDINGS_SCHEMA
+from nhl_bigquery.standings.schema import get_partitioning as standings_partitioning
 from nhl_bigquery.standings.transform import transform_standings_to_df
 from nhl_bigquery.writer import BigQueryWriter, TableRef
 
@@ -140,13 +146,16 @@ def cmd_sync(ns: argparse.Namespace) -> int:
     games_ref = (None if ns.skip_games
                  else TableRef.parse(ns.games_table or _default_ref(ns.plays_table, "games")))
     officials_ref = (None if ns.skip_officials
-                     else TableRef.parse(ns.officials_table or _default_ref(ns.plays_table, "game_officials")))
+                     else TableRef.parse(
+                         ns.officials_table or _default_ref(ns.plays_table, "game_officials")))
     boxscore_ref = (None if ns.skip_boxscore
-                    else TableRef.parse(ns.boxscore_table or _default_ref(ns.plays_table, "boxscore_stats")))
+                    else TableRef.parse(
+                        ns.boxscore_table or _default_ref(ns.plays_table, "boxscore_stats")))
     shifts_ref = (None if ns.skip_shifts
                   else TableRef.parse(ns.shifts_table or _default_ref(ns.plays_table, "shifts")))
     standings_ref = (None if ns.skip_standings
-                     else TableRef.parse(ns.standings_table or _default_ref(ns.plays_table, "standings")))
+                     else TableRef.parse(
+                         ns.standings_table or _default_ref(ns.plays_table, "standings")))
 
     if ns.resume:
         completed = runs.completed_chunks(ref=runs_ref)
@@ -280,11 +289,13 @@ def cmd_sync(ns: argparse.Namespace) -> int:
 
             rows_written = {
                 "games": _concat_and_write(games_ref, games_rows, "game_date", "games"),
-                "officials": _concat_and_write(officials_ref, officials_rows, "game_date", "officials"),
+                "officials": _concat_and_write(
+                    officials_ref, officials_rows, "game_date", "officials"),
                 "boxscore": _concat_and_write(boxscore_ref, boxscore_rows, "game_date", "boxscore"),
                 "shifts": _concat_and_write(shifts_ref, shifts_rows, "game_date", "shifts"),
                 "plays": _concat_and_write(plays_ref, plays_rows, "game_date", "plays"),
-                "standings": _concat_and_write(standings_ref, standings_rows, "snapshot_date", "standings"),
+                "standings": _concat_and_write(
+                    standings_ref, standings_rows, "snapshot_date", "standings"),
             }
 
             if sum(rows_written.values()) == 0:
@@ -305,8 +316,12 @@ def cmd_sync(ns: argparse.Namespace) -> int:
 
 def cmd_docs(ns: argparse.Namespace) -> int:
     from nhl_bigquery.docs.renderers import (
-        apply_data_dictionary, render_bq_descriptions, render_data_dictionary,
-        render_dbt_yaml, render_llm_context, render_markdown,
+        apply_data_dictionary,
+        render_bq_descriptions,
+        render_data_dictionary,
+        render_dbt_yaml,
+        render_llm_context,
+        render_markdown,
     )
     from nhl_bigquery.docs.taxonomy import TABLES
 

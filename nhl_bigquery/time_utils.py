@@ -20,7 +20,7 @@ def parse_mmss(value: str | None) -> int | None:
         return None
     s = value.strip()
     if not s:
-        raise ValueError(f"empty time string")
+        raise ValueError("empty time string")
     parts = s.split(":")
     if len(parts) != 2:
         raise ValueError(f"expected MM:SS, got {value!r}")

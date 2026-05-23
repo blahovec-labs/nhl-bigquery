@@ -47,7 +47,7 @@ def test_sleep_seconds_flag():
 
 
 def test_dry_run_does_not_call_writers():
-    with patch("nhl_bigquery.cli.bigquery.Client") as mock_client, \
+    with patch("nhl_bigquery.cli.bigquery.Client"), \
          patch("nhl_bigquery.cli.NHLAPIClient") as mock_api:
         ret = main([
             "sync", "--start", "2024-10-01", "--end", "2024-10-01",

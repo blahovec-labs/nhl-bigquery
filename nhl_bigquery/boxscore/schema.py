@@ -25,7 +25,8 @@ BOXSCORE_SCHEMA: list[ColumnSpec] = [
          tags=["identifier", "join_key"], example=8478402,
          api_eq="playerId", api_src="playerId"),
     _col("team_id", "INT64", "REQUIRED", "Team ID this game.",
-         "NHL team_id of the team the player suited up for. Mid-season trades produce different team_ids across games.",
+         "NHL team_id of the team the player suited up for. "
+         "Mid-season trades produce different team_ids across games.",
          tags=["identifier", "join_key", "team"], example=10,
          api_eq="(side teamId)", api_src="(side teamId)"),
     _col("player_position_category", "STRING", "REQUIRED",

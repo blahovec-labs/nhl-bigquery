@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -12,7 +12,7 @@ def transform_standings_to_df(
     st: dict[str, Any], *, snapshot_date: str
 ) -> pd.DataFrame:
     """Convert /standings/{date} response to a per-team snapshot DataFrame."""
-    ingested_at = datetime.now(timezone.utc)
+    ingested_at = datetime.now(UTC)
     rows = []
     for s in (st or {}).get("standings") or []:
         team_abbrev = (s.get("teamAbbrev") or {}).get("default")

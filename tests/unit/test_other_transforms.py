@@ -2,7 +2,10 @@ import json
 from pathlib import Path
 
 from nhl_bigquery.boxscore.transform import transform_boxscore_to_df
-from nhl_bigquery.games.transform import transform_landing_to_games_row, transform_score_to_games_rows
+from nhl_bigquery.games.transform import (
+    transform_landing_to_games_row,
+    transform_score_to_games_rows,
+)
 from nhl_bigquery.officials.transform import transform_right_rail_to_officials_df
 from nhl_bigquery.shifts.transform import transform_shift_charts_to_df
 from nhl_bigquery.standings.transform import transform_standings_to_df
