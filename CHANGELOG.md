@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- **`cmd_sync` is resilient to per-game failures.** A single bad game (API 500s, malformed payload, etc.) now logs a warning and is skipped rather than crashing the entire chunk. A summary line is logged at the end of each chunk if any games were skipped.
+- **Preseason games are excluded by default.** Games with `gameType=1` are filtered out in `cmd_sync` because the NHL API is unreliable for preseason landing/PBP endpoints and preseason data is not useful for analytics. Use `--include-preseason` to opt back in.
+
 ## 0.1.0
 
 Initial release.

@@ -90,6 +90,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--sleep-seconds", type=float, default=1.0,
                    help="API politeness sleep in seconds (default 1.0; "
                         "lower = faster backfill but higher 429 risk).")
+    p.add_argument("--include-preseason", action="store_true",
+                   help="Include preseason games (gameType=1). Excluded by "
+                        "default because preseason data is not useful for "
+                        "analytics and the NHL API is unreliable for it.")
 
     # docs (filled in Task 23)
     p_docs = sub.add_parser("docs", help="Render documentation in various formats")
@@ -188,6 +192,11 @@ def cmd_sync(ns: argparse.Namespace) -> int:
                 score = api.get_score(d)
                 games_in_score = (score or {}).get("games") or []
                 for g in games_in_score:
+                    # Filter preseason (gameType=1) unless explicitly included.
+                    # NHL API frequently returns 500 on preseason landing/PBP
+                    # and preseason data isn't useful for analytics anyway.
+                    if not ns.include_preseason and int(g.get("gameType", 0)) == 1:
+                        continue
                     game_ids_with_dates.append((int(g["id"]), g.get("gameDate") or d))
                 if games_ref is not None:
                     df_score = transform_score_to_games_rows(score, date=d)
@@ -200,42 +209,56 @@ def cmd_sync(ns: argparse.Namespace) -> int:
                         standings_rows.append(df_st)
                 cur += pd.Timedelta(days=1)
 
-            # Step 2: fetch per-game data + transform
+            # Step 2: fetch per-game data + transform. Each game is wrapped
+            # in try/except so a single bad game (API 500s, malformed payload,
+            # etc.) logs a warning and continues rather than crashing the
+            # entire chunk.
             seen_game_ids: set[int] = set()
+            failed_games: list[tuple[int, str]] = []
             for game_id, game_date in game_ids_with_dates:
                 if game_id in seen_game_ids:
                     continue
                 seen_game_ids.add(game_id)
-                pbp = api.get_play_by_play(game_id)
-                shifts = api.get_shift_charts(game_id)
-                bs = api.get_boxscore(game_id) if boxscore_ref is not None else None
-                rr = api.get_right_rail(game_id) if officials_ref is not None else None
-                landing = api.get_landing(game_id)
+                try:
+                    pbp = api.get_play_by_play(game_id)
+                    shifts = api.get_shift_charts(game_id)
+                    bs = api.get_boxscore(game_id) if boxscore_ref is not None else None
+                    rr = api.get_right_rail(game_id) if officials_ref is not None else None
+                    landing = api.get_landing(game_id)
 
-                plays_df = transform_game_to_plays_df(pbp=pbp, shift_charts=shifts,
-                                                     landing=landing)
-                if not plays_df.empty:
-                    plays_rows.append(plays_df)
+                    plays_df = transform_game_to_plays_df(pbp=pbp, shift_charts=shifts,
+                                                         landing=landing)
+                    if not plays_df.empty:
+                        plays_rows.append(plays_df)
 
-                if games_ref is not None:
-                    landing_row = transform_landing_to_games_row(landing)
-                    games_rows.append(pd.DataFrame([landing_row]))
+                    if games_ref is not None:
+                        landing_row = transform_landing_to_games_row(landing)
+                        games_rows.append(pd.DataFrame([landing_row]))
 
-                if officials_ref is not None and rr is not None:
-                    officials_df = transform_right_rail_to_officials_df(
-                        rr, game_id=game_id, game_date=game_date)
-                    if not officials_df.empty:
-                        officials_rows.append(officials_df)
+                    if officials_ref is not None and rr is not None:
+                        officials_df = transform_right_rail_to_officials_df(
+                            rr, game_id=game_id, game_date=game_date)
+                        if not officials_df.empty:
+                            officials_rows.append(officials_df)
 
-                if boxscore_ref is not None and bs is not None:
-                    boxscore_df = transform_boxscore_to_df(bs)
-                    if not boxscore_df.empty:
-                        boxscore_rows.append(boxscore_df)
+                    if boxscore_ref is not None and bs is not None:
+                        boxscore_df = transform_boxscore_to_df(bs)
+                        if not boxscore_df.empty:
+                            boxscore_rows.append(boxscore_df)
 
-                if shifts_ref is not None:
-                    shifts_df = transform_shift_charts_to_df(shifts, game_date=game_date)
-                    if not shifts_df.empty:
-                        shifts_rows.append(shifts_df)
+                    if shifts_ref is not None:
+                        shifts_df = transform_shift_charts_to_df(shifts, game_date=game_date)
+                        if not shifts_df.empty:
+                            shifts_rows.append(shifts_df)
+                except Exception as e:
+                    failed_games.append((game_id, str(e)[:200]))
+                    log.warning("game %s on %s failed: %s; skipping",
+                                game_id, game_date, e)
+                    continue
+
+            if failed_games:
+                log.warning("chunk %s -> %s: %d games skipped due to errors",
+                            cs, ce, len(failed_games))
 
             # Step 3: ensure all tables exist before writing
             if plays_ref is not None:
