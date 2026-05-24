@@ -1,0 +1,14 @@
+{
+  "playerId": 8473419,
+  "firstName": {"default": "Marc-André"},
+  "lastName": {"default": "Fleury"},
+  "position": "G",
+  "sweaterNumber": 29,
+  "currentTeamAbbrev": "MIN",
+  "shootsCatches": "L",
+  "birthDate": "1984-11-28",
+  "birthCountry": "CAN",
+  "heightInInches": 74,
+  "weightInPounds": 180,
+  "headshot": "https://assets.nhle.com/mugs/nhl/20232024/MIN/8473419.png"
+}

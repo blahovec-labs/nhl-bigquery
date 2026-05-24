@@ -1,0 +1,14 @@
+{
+  "playerId": 8478402,
+  "firstName": {"default": "Connor"},
+  "lastName": {"default": "McDavid"},
+  "position": "C",
+  "sweaterNumber": 97,
+  "currentTeamAbbrev": "EDM",
+  "shootsCatches": "L",
+  "birthDate": "1997-01-13",
+  "birthCountry": "CAN",
+  "heightInInches": 73,
+  "weightInPounds": 193,
+  "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png"
+}
