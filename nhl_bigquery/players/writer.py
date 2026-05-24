@@ -88,17 +88,26 @@ def select_missing_player_ids_sql(*, plays_table: str, players_table: str) -> st
 
 
 _NULLABLE_INT_COLUMNS = ("sweater_number", "height_inches", "weight_pounds")
+_DATE_COLUMNS = ("birth_date",)
 
 
-def _coerce_nullable_ints(df: pd.DataFrame) -> pd.DataFrame:
-    """Pandas promotes int columns to float64 when any cell is NaN, which BQ
-    rejects on load against an INT64 column. Cast those columns to pandas's
-    nullable Int64 dtype so BQ sees integers + nulls correctly.
+def _coerce_for_bq(df: pd.DataFrame) -> pd.DataFrame:
+    """Coerce DataFrame columns to types BigQuery accepts against the
+    dim_players target schema.
+
+    - Nullable INT64 columns arrive as float64 from pandas (NaN promotion);
+      cast to pandas Int64 so BQ sees integers + nulls.
+    - DATE columns arrive as object/string; cast to datetime.date so
+      load_table_from_dataframe stages them as DATE (not STRING), which
+      keeps the downstream MERGE assignment compatible.
     """
     df = df.copy()
     for col in _NULLABLE_INT_COLUMNS:
         if col in df.columns and str(df[col].dtype) == "float64":
             df[col] = df[col].astype("Int64")
+    for col in _DATE_COLUMNS:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
     return df
 
 
@@ -113,7 +122,7 @@ def upsert_players(
         log.info("upsert_players: empty df, skipping")
         return 0
 
-    df = _coerce_nullable_ints(df)
+    df = _coerce_for_bq(df)
 
     target_parts = target.split(".")
     if len(target_parts) != 3:
