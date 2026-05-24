@@ -89,5 +89,5 @@ DIM_PLAYERS_SCHEMA: list[ColumnSpec] = [
          "When this row was last upserted by nhl-bigquery.",
          "UTC timestamp of the most recent fetch from /player/{id}/landing. "
          "Used by from-plays discovery to skip recently-fetched IDs.",
-         api_src="derived"),
+         tags=["meta"], api_src="(set by ingestion)"),
 ]
