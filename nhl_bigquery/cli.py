@@ -36,6 +36,12 @@ from nhl_bigquery.games.transform import (
 from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA
 from nhl_bigquery.officials.schema import get_partitioning as officials_partitioning
 from nhl_bigquery.officials.transform import transform_right_rail_to_officials_df
+from nhl_bigquery.players.schema import DIM_PLAYERS_SCHEMA
+from nhl_bigquery.players.transform import transform_player_landings_to_df
+from nhl_bigquery.players.writer import (
+    select_missing_player_ids_sql,
+    upsert_players,
+)
 from nhl_bigquery.plays.schema import PLAYS_SCHEMA
 from nhl_bigquery.plays.schema import get_partitioning as plays_partitioning
 from nhl_bigquery.plays.transform import transform_game_to_plays_df
@@ -119,6 +125,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_v.add_argument("--min-sample-size", type=int, default=50)
     p_v.add_argument("--threshold", type=float, default=0.99)
     p_v.add_argument("--output", default="-")
+
+    # players
+    p = sub.add_parser("players", help="Fetch player metadata into dim_players")
+    p.add_argument("--players-table", required=True,
+                   help="project.dataset.dim_players")
+    p.add_argument("--source", choices=["nhl-api", "from-plays"], default="from-plays")
+    p.add_argument("--ids", help="Comma-separated player IDs (with --source=nhl-api)")
+    p.add_argument("--from-plays-table",
+                   help="Plays table to discover IDs from (with --source=from-plays)")
+    p.add_argument("--sleep-seconds", type=float, default=0.5)
+    p.add_argument("--dry-run", action="store_true")
+    p.set_defaults(func=cmd_players)
 
     return parser
 
@@ -450,6 +468,64 @@ def cmd_verify(ns: argparse.Namespace) -> int:
     return 0 if result.overall_pass else 1
 
 
+def cmd_players(ns: argparse.Namespace) -> int:
+    """Fetch /player/{id}/landing for missing IDs and MERGE into dim_players."""
+    api = NHLAPIClient(sleep_seconds=ns.sleep_seconds)
+
+    if ns.source == "nhl-api":
+        if not ns.ids:
+            log.error("--source=nhl-api requires --ids 1,2,3,...")
+            return 2
+        ids = [int(x) for x in ns.ids.split(",") if x.strip()]
+    elif ns.source == "from-plays":
+        if ns.ids:
+            log.error("--ids only valid with --source=nhl-api; got --source=from-plays")
+            return 2
+        if not ns.from_plays_table:
+            log.error("--source=from-plays requires --from-plays-table")
+            return 2
+        bq_client = bigquery.Client()
+        sql = select_missing_player_ids_sql(
+            plays_table=ns.from_plays_table,
+            players_table=ns.players_table,
+        )
+        log.info("discovering missing player_ids...")
+        df_ids = bq_client.query(sql).to_dataframe()
+        ids = [int(x) for x in df_ids["player_id"].tolist()]
+        log.info("discovered %d missing player_ids", len(ids))
+    else:
+        log.error("unknown --source %s", ns.source)
+        return 2
+
+    if not ids:
+        log.info("no player_ids to fetch; done")
+        return 0
+
+    landings: list[dict] = []
+    for i, pid in enumerate(ids, 1):
+        try:
+            landings.append(api.get_player_landing(pid))
+        except Exception as e:
+            log.warning("player_id=%s landing failed: %s", pid, e)
+        if i % 50 == 0:
+            log.info("fetched %d/%d", i, len(ids))
+
+    if not landings:
+        log.warning("no successful landings; nothing to write")
+        return 0
+
+    df = transform_player_landings_to_df(landings)
+
+    if ns.dry_run:
+        log.info("dry-run: would upsert %d rows into %s", len(df), ns.players_table)
+        return 0
+
+    bq_client = bigquery.Client()
+    n = upsert_players(bq_client, target=ns.players_table, df=df)
+    log.info("upserted %d rows into %s", n, ns.players_table)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     ns = parser.parse_args(argv)
@@ -459,6 +535,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_docs(ns)
     if ns.command == "verify":
         return cmd_verify(ns)
+    if ns.command == "players":
+        return cmd_players(ns)
     raise AssertionError(f"unhandled command {ns.command}")
 
 
