@@ -87,6 +87,21 @@ def select_missing_player_ids_sql(*, plays_table: str, players_table: str) -> st
     return _DISCOVERY_TEMPLATE.format(plays=plays_table, players=players_table).strip()
 
 
+_NULLABLE_INT_COLUMNS = ("sweater_number", "height_inches", "weight_pounds")
+
+
+def _coerce_nullable_ints(df: pd.DataFrame) -> pd.DataFrame:
+    """Pandas promotes int columns to float64 when any cell is NaN, which BQ
+    rejects on load against an INT64 column. Cast those columns to pandas's
+    nullable Int64 dtype so BQ sees integers + nulls correctly.
+    """
+    df = df.copy()
+    for col in _NULLABLE_INT_COLUMNS:
+        if col in df.columns and str(df[col].dtype) == "float64":
+            df[col] = df[col].astype("Int64")
+    return df
+
+
 def upsert_players(
     client: bigquery.Client,
     *,
@@ -98,10 +113,12 @@ def upsert_players(
         log.info("upsert_players: empty df, skipping")
         return 0
 
+    df = _coerce_nullable_ints(df)
+
     target_parts = target.split(".")
     if len(target_parts) != 3:
         raise ValueError(f"expected project.dataset.table, got {target!r}")
-    proj, ds, table = target_parts
+    proj, ds, _table = target_parts
     stage = f"{proj}.{ds}._dim_players_stage_{uuid.uuid4().hex[:8]}"
 
     load_job = client.load_table_from_dataframe(
