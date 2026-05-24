@@ -83,3 +83,7 @@ class NHLAPIClient:
 
     def get_landing(self, game_id: int) -> dict[str, Any]:
         return self._get(f"/gamecenter/{game_id}/landing")
+
+    def get_player_landing(self, player_id: int) -> dict[str, Any]:
+        """Fetch /player/{id}/landing — player-level metadata for dim_players."""
+        return self._get(f"/player/{player_id}/landing")

@@ -72,3 +72,19 @@ def test_get_shift_charts_uses_legacy_endpoint():
     result = client.get_shift_charts(2024020001)
     assert result["total"] == 1
     assert result["data"][0]["playerId"] == 8478402
+
+
+def test_get_player_landing_builds_correct_url(monkeypatch):
+    from nhl_bigquery.client import NHLAPIClient
+
+    captured = {}
+
+    def fake_get(self, path):
+        captured["path"] = path
+        return {"playerId": 8478402, "firstName": {"default": "Connor"}}
+
+    monkeypatch.setattr(NHLAPIClient, "_get", fake_get)
+    client = NHLAPIClient(sleep_seconds=0)
+    result = client.get_player_landing(8478402)
+    assert captured["path"] == "/player/8478402/landing"
+    assert result["playerId"] == 8478402
