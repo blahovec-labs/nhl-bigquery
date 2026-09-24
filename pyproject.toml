@@ -1,6 +1,6 @@
 [project]
 name = "nhl-bigquery"
-version = "0.2.2"
+version = "0.2.3"
 description = "NHL play-by-play → BigQuery: idempotent ingestion + LLM-friendly docs + verification"
 readme = "README.md"
 license = { text = "MIT" }

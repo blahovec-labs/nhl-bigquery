@@ -40,6 +40,31 @@ def test_officials_transform(captured_game_id):
     assert len(df) >= 0
 
 
+def test_officials_transform_legacy_shape_keeps_names():
+    # Pre-2026-27 right-rail: {"default": name}, no sweaterNumber.
+    rr = {"gameInfo": {"referees": [{"default": "Ghislain Hebert"}],
+                       "linesmen": [{"default": "Brad Kovachik"}]}}
+    df = transform_right_rail_to_officials_df(rr, game_id=1, game_date="2024-10-08")
+    assert df["official_name"].tolist() == ["Ghislain Hebert", "Brad Kovachik"]
+    assert df["official_number"].isna().all()
+
+
+def test_officials_transform_fullname_shape():
+    # 2026-27 right-rail (also served retroactively for old games):
+    # {"fullName": {"default": name}, "sweaterNumber": int}.
+    rr = {"gameInfo": {
+        "referees": [{"fullName": {"default": "Garrett Rank"}, "sweaterNumber": 7},
+                     {"fullName": {"default": "Jean Hebert"}, "sweaterNumber": 15}],
+        "linesmen": [{"fullName": {"default": "Scott Cherrey"}, "sweaterNumber": 50}],
+    }}
+    df = transform_right_rail_to_officials_df(rr, game_id=1, game_date="2026-06-14")
+    assert df["role"].tolist() == ["REFEREE_1", "REFEREE_2", "LINESMAN_1"]
+    assert df["official_name"].tolist() == ["Garrett Rank", "Jean Hebert", "Scott Cherrey"]
+    # official_number is a STRING column: an int here fails the BigQuery
+    # load with pyarrow "Expected a string or bytes dtype, got int64".
+    assert df["official_number"].tolist() == ["7", "15", "50"]
+
+
 def test_boxscore_transform_splits_skater_goalie(captured_game_id):
     bs = _load("games", str(captured_game_id), "boxscore.json")
     df = transform_boxscore_to_df(bs)

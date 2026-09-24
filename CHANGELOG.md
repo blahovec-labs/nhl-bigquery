@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- **Fix: `game_officials` load crash on the 2026-27 NHL API.** The `/gamecenter/{id}/right-rail` payload changed each official from `{"default": name}` to `{"fullName": {"default": name}, "sweaterNumber": int}` — served retroactively for old games too. The int `sweaterNumber` failed the BigQuery load into the STRING `official_number` column, aborting the whole sync chunk (plays included), and names read as NULL. Both shapes are now handled; `official_number` is stringified.
+
 ## 0.1.1
 
 - **`cmd_sync` is resilient to per-game failures.** A single bad game (API 500s, malformed payload, etc.) now logs a warning and is skipped rather than crashing the entire chunk. A summary line is logged at the end of each chunk if any games were skipped.
