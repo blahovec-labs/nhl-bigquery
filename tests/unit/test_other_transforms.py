@@ -46,7 +46,7 @@ def test_officials_transform_legacy_shape_keeps_names():
                        "linesmen": [{"default": "Brad Kovachik"}]}}
     df = transform_right_rail_to_officials_df(rr, game_id=1, game_date="2024-10-08")
     assert df["official_name"].tolist() == ["Ghislain Hebert", "Brad Kovachik"]
-    assert df["official_number"].isna().all()
+    assert bool(df["official_number"].isna().all())
 
 
 def test_officials_transform_fullname_shape():

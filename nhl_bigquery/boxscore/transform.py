@@ -40,7 +40,7 @@ def transform_boxscore_to_df(bs: dict[str, Any]) -> pd.DataFrame:
     ingested_at = datetime.now(UTC)
 
     for side in ("awayTeam", "homeTeam"):
-        team_id = int((bs.get(side) or {}).get("id"))
+        team_id = int((bs.get(side) or {})["id"])
         side_block = pgs.get(side) or {}
         for cat, players in (
             ("skater", side_block.get("forwards") or []),

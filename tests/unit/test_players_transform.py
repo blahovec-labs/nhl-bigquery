@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pandas as pd
-
 from nhl_bigquery.players.transform import (
     transform_player_landing_to_row,
     transform_player_landings_to_df,

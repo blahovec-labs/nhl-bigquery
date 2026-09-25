@@ -99,16 +99,16 @@ def transform_game_to_plays_df(
     *, pbp: dict[str, Any], shift_charts: dict[str, Any], landing: dict[str, Any]
 ) -> pd.DataFrame:
     """Transform one game's API responses into a plays DataFrame."""
-    game_id = int(pbp.get("id") or landing.get("id"))
+    game_id = int(pbp.get("id") or landing["id"])
     game_date = pbp.get("gameDate") or landing.get("gameDate")
-    season_raw = int(pbp.get("season") or landing.get("season"))
+    season_raw = int(pbp.get("season") or landing["season"])
     season = season_raw // 10000  # 20242025 → 2024
-    game_type_int = int(pbp.get("gameType") or landing.get("gameType"))
+    game_type_int = int(pbp.get("gameType") or landing["gameType"])
     game_type = _GAME_TYPE_MAP.get(game_type_int)
     home_team = pbp.get("homeTeam") or landing.get("homeTeam") or {}
     away_team = pbp.get("awayTeam") or landing.get("awayTeam") or {}
-    home_team_id = int(home_team.get("id"))
-    away_team_id = int(away_team.get("id"))
+    home_team_id = int(home_team["id"])
+    away_team_id = int(away_team["id"])
     home_abbrev = home_team.get("abbrev")
     away_abbrev = away_team.get("abbrev")
 

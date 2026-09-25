@@ -24,14 +24,15 @@ def _ns(**overrides) -> argparse.Namespace:
 
 @patch("nhl_bigquery.cli.bigquery.Client")
 @patch("nhl_bigquery.cli.NHLAPIClient")
-def test_players_explicit_ids_fetches_and_upserts(MockClient, MockBq):
-    api = MockClient.return_value
+def test_players_explicit_ids_fetches_and_upserts(mock_client, mock_bq):
+    api = mock_client.return_value
     api.get_player_landing.side_effect = [
         {"playerId": 1, "firstName": {"default": "A"}, "lastName": {"default": "Z"}},
         {"playerId": 2, "firstName": {"default": "B"}, "lastName": {"default": "Y"}},
     ]
-    bq_client = MockBq.return_value
-    load_job = MagicMock(); load_job.result.return_value = None
+    bq_client = mock_bq.return_value
+    load_job = MagicMock()
+    load_job.result.return_value = None
     bq_client.load_table_from_dataframe.return_value = load_job
     bq_client.query.return_value = MagicMock(result=MagicMock(return_value=None))
 
@@ -42,14 +43,15 @@ def test_players_explicit_ids_fetches_and_upserts(MockClient, MockBq):
 
 @patch("nhl_bigquery.cli.bigquery.Client")
 @patch("nhl_bigquery.cli.NHLAPIClient")
-def test_players_from_plays_discovers_ids_via_sql(MockClient, MockBq):
-    api = MockClient.return_value
+def test_players_from_plays_discovers_ids_via_sql(mock_client, mock_bq):
+    api = mock_client.return_value
     api.get_player_landing.return_value = {
         "playerId": 42, "firstName": {"default": "X"}, "lastName": {"default": "Q"},
     }
-    bq_client = MockBq.return_value
+    bq_client = mock_bq.return_value
     bq_client.query.return_value.to_dataframe.return_value = pd.DataFrame({"player_id": [42]})
-    load_job = MagicMock(); load_job.result.return_value = None
+    load_job = MagicMock()
+    load_job.result.return_value = None
     bq_client.load_table_from_dataframe.return_value = load_job
 
     rc = cmd_players(_ns(
@@ -70,12 +72,17 @@ def test_players_rejects_ids_without_source_api():
 
 def test_players_dry_run_skips_writes(monkeypatch):
     captured = {"loaded": False}
-    with patch("nhl_bigquery.cli.NHLAPIClient") as Mc, \
-         patch("nhl_bigquery.cli.bigquery.Client") as Mb:
-        Mc.return_value.get_player_landing.return_value = {
+    with patch("nhl_bigquery.cli.NHLAPIClient") as mock_client, \
+         patch("nhl_bigquery.cli.bigquery.Client") as mock_bq:
+        mock_client.return_value.get_player_landing.return_value = {
             "playerId": 1, "firstName": {"default": "A"}, "lastName": {"default": "Z"},
         }
-        Mb.return_value.load_table_from_dataframe = lambda *a, **k: captured.update(loaded=True) or MagicMock(result=lambda: None)
+
+        def _load(*a, **k):
+            captured.update(loaded=True)
+            return MagicMock(result=lambda: None)
+
+        mock_bq.return_value.load_table_from_dataframe = _load
         rc = cmd_players(_ns(source="nhl-api", ids="1", dry_run=True))
     assert rc == 0
     assert captured["loaded"] is False

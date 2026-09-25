@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Self
 
 import pandas as pd
 from google.cloud import bigquery
@@ -67,7 +67,7 @@ class TableRef:
         return f"{self.project}.{self.dataset}.{self.table}"
 
     @classmethod
-    def parse(cls, s: str) -> TableRef:
+    def parse(cls, s: str) -> Self:
         parts = s.split(".")
         if len(parts) != 3:
             raise ValueError(f"expected project.dataset.table, got {s!r}")

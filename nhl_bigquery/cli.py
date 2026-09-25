@@ -17,6 +17,7 @@ import json
 import logging
 import sys
 from datetime import date as _date
+from datetime import timedelta as _timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -36,7 +37,6 @@ from nhl_bigquery.games.transform import (
 from nhl_bigquery.officials.schema import OFFICIALS_SCHEMA
 from nhl_bigquery.officials.schema import get_partitioning as officials_partitioning
 from nhl_bigquery.officials.transform import transform_right_rail_to_officials_df
-from nhl_bigquery.players.schema import DIM_PLAYERS_SCHEMA
 from nhl_bigquery.players.transform import transform_player_landings_to_df
 from nhl_bigquery.players.writer import (
     select_missing_player_ids_sql,
@@ -225,7 +225,7 @@ def cmd_sync(ns: argparse.Namespace) -> int:
                     df_st = transform_standings_to_df(st, snapshot_date=d)
                     if not df_st.empty:
                         standings_rows.append(df_st)
-                cur += pd.Timedelta(days=1)
+                cur += _timedelta(days=1)
 
             # Step 2: fetch per-game data + transform. Each game is wrapped
             # in try/except so a single bad game (API 500s, malformed payload,
